@@ -89,12 +89,27 @@ func GetNodeFromText(node *html.Node, text string) *html.Node {
 func GetChildrenOfType(node *html.Node, nodeType string) []html.Node {
 	return nil
 }
-func GetSiblingsOfType(start *html.Node, nodeType string) []*html.Node {
+
+type matchMany func(*html.Node, map[string]bool)
+
+func matchNodeTypes(node *html.Node, types map[string]bool) bool {
+	if node.Type == html.ElementNode && types[node.Data] {
+		return true
+	}
+	return false
+}
+
+func GetSiblingsOfType(start *html.Node, types ...string) []*html.Node {
 	var targets []*html.Node
 	var find func(node *html.Node)
 
+	typeMap := make(map[string]bool)
+	for _, t := range types {
+		typeMap[t] = true
+	}
+
 	find = func(node *html.Node) {
-		if node.Type == html.ElementNode && node.Data == nodeType {
+		if matchNodeTypes(node, typeMap) {
 			targets = append(targets, node)
 		}
 		if node.NextSibling == nil {
@@ -108,6 +123,7 @@ func GetSiblingsOfType(start *html.Node, nodeType string) []*html.Node {
 	}
 	return targets
 }
+
 func GetParentOfType(start *html.Node, nodeType string) *html.Node {
 	var target *html.Node
 	var find func(node *html.Node)
