@@ -16,19 +16,21 @@ limitations under the License.
 package cmd
 
 import (
-	"company-funding/request"
+	"company-funding/parser"
+	"company-funding/util"
 	"fmt"
-	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/net/html"
 )
 
 var (
-	startNum  int
-	fetchYear int
+	debugfile string
 
-	fetchCmd = &cobra.Command{
-		Use:   "fetch",
+	// debugfileCmd represents the debugfile command
+	debugfileCmd = &cobra.Command{
+		Use:   "debugfile",
 		Short: "A brief description of your command",
 		Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
@@ -37,28 +39,29 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("fetch called")
-			if fetchYear == 0 || startNum == 0 {
-				fmt.Println("neither year nor start can be 0")
-				os.Exit(1)
+			// empty string is a test file
+			fmt.Println("debugfile called")
+			content, err := util.GetLocalHtml(debugfile)
+			if err != nil {
+				panic(err)
 			}
-			request.BatchFetchWebpages(fetchYear, startNum)
+
+			doc, _ := html.Parse(strings.NewReader(string(content)))
+			parser.DebugParse(doc)
 		},
 	}
 )
 
 func init() {
-	fetchCmd.Flags().IntVar(&fetchYear, "year", 0, "the year to fetch for")
-	fetchCmd.Flags().IntVar(&startNum, "start", 0, "the num to start with")
-	rootCmd.AddCommand(fetchCmd)
-
+	debugfileCmd.Flags().StringVar(&debugfile, "file", "", "specify the file to get")
+	rootCmd.AddCommand(debugfileCmd)
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// fetchCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// debugfileCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// fetchCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// debugfileCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

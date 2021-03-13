@@ -24,28 +24,33 @@ import (
 	"golang.org/x/net/html"
 )
 
-// devfileCmd represents the devfile command
-var devfileCmd = &cobra.Command{
-	Use:   "devfile",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
+var (
+	file string
+
+	devfileCmd = &cobra.Command{
+		Use:   "devfile",
+		Short: "A brief description of your command",
+		Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		content, err := util.GetDevHtml()
-		if err != nil {
-			panic(err)
-		}
+		Run: func(cmd *cobra.Command, args []string) {
+			// empty string is a test file
+			content, err := util.GetLocalHtml(file)
+			if err != nil {
+				panic(err)
+			}
 
-		doc, _ := html.Parse(strings.NewReader(string(content)))
-		parser.Parse(doc)
-	},
-}
+			doc, _ := html.Parse(strings.NewReader(string(content)))
+			parser.Parse(doc)
+		},
+	}
+)
 
 func init() {
+	devfileCmd.Flags().StringVar(&file, "file", "", "specify the file to get")
 	rootCmd.AddCommand(devfileCmd)
 
 	// Here you will define your flags and configuration settings.

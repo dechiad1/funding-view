@@ -6,14 +6,37 @@ import (
 	"golang.org/x/net/html"
 )
 
-var (
-	REGIONS = []string{"Americas", "EMEA", "APAC"}
-)
+var dfs func(*html.Node)
 
-type Matcher func(x string) bool
+// pass in pointer to slice, to fill with nodes during this DFS operation
+func GetDFSNodes(doc *html.Node, r *[]*html.Node) {
+	dfs = func(node *html.Node) {
+		*r = append(*r, node)
+		for child := node.FirstChild; child != nil; child = child.NextSibling {
+			dfs(child)
+		}
+	}
+	dfs(doc)
+}
 
-//TODO: pass in a function that matches a node with a string
-//func StringMatcher
+func HtmlToString(node *html.Node) string {
+	text := ""
+	dfs = func(n *html.Node) {
+		if n.Type == html.TextNode {
+			text = text + n.Data
+		} else {
+			text = text + "<" + n.Data + ">"
+		}
+		for child := n.FirstChild; child != nil; child = child.NextSibling {
+			dfs(child)
+		}
+		if n.Type == html.ElementNode {
+			text = text + "</" + n.Data + ">"
+		}
+	}
+	dfs(node)
+	return text
+}
 
 func GetBody(doc *html.Node) *html.Node {
 	var body *html.Node
@@ -86,8 +109,68 @@ func GetNodeFromText(node *html.Node, text string) *html.Node {
 	return nil
 }
 
-func GetChildrenOfType(node *html.Node, nodeType string) []html.Node {
-	return nil
+func contains(t string, s ...string) bool {
+	exists := make(map[string]bool)
+	for _, ss := range s {
+		exists[ss] = true
+	}
+
+	if exists[t] {
+		return true
+	}
+	return false
+
+}
+
+func GetNodesOfType(node *html.Node, nodeTypes ...string) []*html.Node {
+	targets := make([]*html.Node, 0)
+	var find func(*html.Node)
+
+	find = func(t *html.Node) {
+		if t.Type == html.ElementNode && contains(t.Data, nodeTypes...) {
+			targets = append(targets, t)
+		}
+		for c := t.FirstChild; c != nil; c = c.NextSibling {
+			find(c)
+		}
+	}
+	find(node)
+	return targets
+}
+
+func NodeToStringSlice(node *html.Node) []string {
+	var result []string
+	var find func(*html.Node)
+
+	find = func(t *html.Node) {
+		if t.Type == html.TextNode {
+			data := RemoveSpecialChars(t.Data)
+			result = append(result, data)
+		}
+
+		for c := t.FirstChild; c != nil; c = c.NextSibling {
+			find(c)
+		}
+	}
+	find(node)
+	return result
+}
+
+func GetTextFromNode(node *html.Node) string {
+	var result string
+	var find func(*html.Node)
+
+	find = func(t *html.Node) {
+		if t.Type == html.TextNode {
+			result = result + t.Data
+		}
+
+		for c := t.FirstChild; c != nil; c = c.NextSibling {
+			find(c)
+		}
+	}
+	find(node)
+	return result
 }
 
 type matchMany func(*html.Node, map[string]bool)
@@ -156,19 +239,4 @@ func RemoveSpecialChars(candidate string) string {
 		}
 	}
 	return string(r[:])
-}
-
-func ParseFundingFromNode(node *html.Node) {
-
-}
-
-// TODO: determine why this SOs
-func GetBodyNR(doc *html.Node) *html.Node {
-	if doc.Type == html.ElementNode && doc.Data == "body" {
-		return doc
-	}
-	for child := doc.FirstChild; child != nil; child = child.NextSibling {
-		return GetBodyNR(doc)
-	}
-	return nil
 }

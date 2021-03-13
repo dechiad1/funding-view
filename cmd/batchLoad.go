@@ -16,19 +16,23 @@ limitations under the License.
 package cmd
 
 import (
-	"company-funding/request"
+	"company-funding/parser"
+	"company-funding/util"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/net/html"
 )
 
 var (
-	startNum  int
-	fetchYear int
+	year  int
+	fetch bool
 
-	fetchCmd = &cobra.Command{
-		Use:   "fetch",
+	// batchLoadCmd represents the batchLoad command
+	batchLoadCmd = &cobra.Command{
+		Use:   "batchLoad",
 		Short: "A brief description of your command",
 		Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
@@ -37,28 +41,47 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("fetch called")
-			if fetchYear == 0 || startNum == 0 {
-				fmt.Println("neither year nor start can be 0")
+			fmt.Println("batchLoad called")
+			if year == 0 {
+				fmt.Println("A year to run the batch load for is required")
 				os.Exit(1)
 			}
-			request.BatchFetchWebpages(fetchYear, startNum)
+
+			if fetch {
+				//request.BatchFetchWebpages(year)
+			}
+
+			dir := fmt.Sprintf("webpages/fundingletter/%d/", year)
+			fmt.Printf("fetching from directory %s\n", dir)
+			files := util.GetFilenamesFromDirectory(dir)
+			for _, f := range files {
+				fmt.Printf("Attempting to parse file %s\n", dir+f)
+				b, err := util.GetLocalHtml(dir + f)
+				if err != nil {
+					panic(err)
+				}
+
+				doc, _ := html.Parse(strings.NewReader(string(b)))
+				result := parser.Parse(doc)
+				if result < 0 {
+					fmt.Printf("could not parse %s, no starting element found\n", f)
+				}
+			}
 		},
 	}
 )
 
 func init() {
-	fetchCmd.Flags().IntVar(&fetchYear, "year", 0, "the year to fetch for")
-	fetchCmd.Flags().IntVar(&startNum, "start", 0, "the num to start with")
-	rootCmd.AddCommand(fetchCmd)
-
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// fetchCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// batchLoadCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// fetchCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// batchLoadCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	batchLoadCmd.Flags().BoolP("fetch", "f", false, "fetch as well as the load the data for a year")
+	batchLoadCmd.Flags().IntVar(&year, "year", 0, "the year to run the batch process for")
+	rootCmd.AddCommand(batchLoadCmd)
 }

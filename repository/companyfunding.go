@@ -2,7 +2,6 @@ package repository
 
 import (
 	"company-funding/dto"
-	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -28,26 +27,37 @@ var (
 )
 
 func ConvertCompanyDto(dto *dto.FlCompanyDTO) *CompanyFunding {
-	ec := pattern.FindAllString(dto.EmployeeCount, 1)[0]
-	e, err := strconv.Atoi(ec)
-	if err != nil {
-		fmt.Printf("Warn: could not convert ec for company %s\n", dto.Name)
-		e = -1
+	ecSlice := pattern.FindAllString(dto.EmployeeCount, 1)
+	var ec string
+	e := -1
+	if len(ecSlice) > 0 {
+		ec = ecSlice[0]
+		e, _ = strconv.Atoi(ec)
+	}
+
+	cf := &CompanyFunding{
+		Name:          dto.Name,
+		Description:   dto.Description,
+		Investors:     dto.Investors,
+		Industry:      dto.Industry,
+		EmployeeCount: e,
 	}
 
 	funding := strings.Split(dto.Funding, ",")
-	location := strings.Split(dto.Location, ",")
+	// slice funding is length 1 if there is no comma
+	if len(funding) > 1 {
+		cf.FundingAmount = funding[0]
+		cf.FundingRound = funding[1]
+	} else {
+		cf.FundingRound = funding[0]
+	}
 
-	cf := &CompanyFunding{
-		Name:                 dto.Name,
-		Description:          dto.Description,
-		FundingAmount:        funding[0],
-		FundingRound:         funding[1],
-		Investors:            dto.Investors,
-		LocationCity:         location[0],
-		LocationMunicipality: location[1],
-		Industry:             dto.Industry,
-		EmployeeCount:        e,
+	location := strings.Split(dto.Location, ",")
+	if len(location) > 0 {
+		cf.LocationCity = location[0]
+		cf.LocationMunicipality = location[1]
+	} else {
+		cf.LocationMunicipality = location[0]
 	}
 
 	return cf
