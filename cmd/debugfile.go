@@ -16,13 +16,9 @@ limitations under the License.
 package cmd
 
 import (
-	"company-funding/parser"
-	"company-funding/util"
 	"fmt"
-	"strings"
 
 	"github.com/spf13/cobra"
-	"golang.org/x/net/html"
 )
 
 var (
@@ -41,13 +37,14 @@ to quickly create a Cobra application.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			// empty string is a test file
 			fmt.Println("debugfile called")
-			content, err := util.GetLocalHtml(debugfile)
-			if err != nil {
-				panic(err)
-			}
+			//content, err := util.GetLocalHtml(debugfile)
+			//if err != nil {
+			//	panic(err)
+			//}
 
-			doc, _ := html.Parse(strings.NewReader(string(content)))
-			parser.DebugParse(doc)
+			//doc, _ := html.Parse(strings.NewReader(string(content)))
+
+			//parser.DebugParse(doc)
 		},
 	}
 )

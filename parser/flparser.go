@@ -2,24 +2,58 @@ package parser
 
 import (
 	"company-funding/dto"
+	"company-funding/repository"
 	"company-funding/util"
+	"fmt"
 	"strings"
 
 	"golang.org/x/net/html"
+	"gorm.io/gorm"
 )
 
 type FlParser struct {
-	doc string
+	Dev        bool
+	Db         *gorm.DB
+	CurrentDoc string
 }
 
 func (p *FlParser) Parse(node *html.Node) {
-	var find func(*html.Node)
-	find = func(node *html.Node) {
-		for fc := node.FirstChild; fc != nil; fc = fc.NextSibling {
+	companies := make([]*dto.FlCompanyDTO, 0)
+	p.parse(node, &companies)
 
+	if p.Dev {
+		fmt.Println(len(companies))
+		for _, c := range companies {
+			c.PrintDto()
+			fmt.Println()
+		}
+	} else {
+		for i, c := range companies {
+			dao := repository.CompanyFunding{}
+			c.ConvertFlCompanyDto(&dao)
+			if c.Name == "" {
+				fmt.Printf("Company number %d from %s is null", i, p.CurrentDoc)
+			}
+			p.Db.Create(c)
 		}
 	}
-	find(node)
+}
+
+func (p *FlParser) parse(node *html.Node, companies *[]*dto.FlCompanyDTO) {
+	dfsnodes := make([]*html.Node, 0)
+	util.GetDFSNodes(node, &dfsnodes)
+	company := &dto.FlCompanyDTO{}
+	for _, node := range dfsnodes {
+		if p.IsSeparator(node) {
+			if company.IsSaveAble() {
+				*companies = append(*companies, company)
+			}
+			company = &dto.FlCompanyDTO{}
+		} else {
+			IsAttribute(node, company)
+		}
+	}
+
 }
 
 func (p *FlParser) IsSeparator(node *html.Node) bool {
@@ -60,13 +94,17 @@ func IsAttribute(node *html.Node, company *dto.FlCompanyDTO) {
 	} else {
 		// get the nodes children as a string & test if its likely to be name & description
 		text := util.HtmlToString(node)
+		if strings.Contains(text, "<br>") {
+			// TODO: add printline here for the date with this blocking item
+			return
+		}
 		if strings.Count(text, "<p>") != 1 {
 			return
 		}
 		if strings.Count(text, "<a>") > 4 {
 			return
 		}
-		if !strings.Contains(text, "LinkedIn") {
+		if !contains(text, "LinkedIn", "Linkedin", "linkedin") {
 			return
 		}
 		// at this point, its probably the right element
@@ -87,5 +125,14 @@ func IsAttribute(node *html.Node, company *dto.FlCompanyDTO) {
 		}
 		company.Description = description
 	}
+}
 
+func contains(text string, words ...string) bool {
+	contains := false
+	for _, w := range words {
+		if strings.Contains(text, w) {
+			contains = true
+		}
+	}
+	return contains
 }

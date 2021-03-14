@@ -62,10 +62,8 @@ to quickly create a Cobra application.`,
 				}
 
 				doc, _ := html.Parse(strings.NewReader(string(b)))
-				result := parser.Parse(doc)
-				if result < 0 {
-					fmt.Printf("could not parse %s, no starting element found\n", f)
-				}
+				p := parser.FlParser{}
+				p.Parse(doc)
 			}
 		},
 	}

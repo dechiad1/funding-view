@@ -17,7 +17,9 @@ package cmd
 
 import (
 	"company-funding/parser"
+	"company-funding/repository"
 	"company-funding/util"
+	"fmt"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -25,7 +27,8 @@ import (
 )
 
 var (
-	file string
+	file    string
+	devMode bool
 
 	devfileCmd = &cobra.Command{
 		Use:   "devfile",
@@ -40,17 +43,31 @@ to quickly create a Cobra application.`,
 			// empty string is a test file
 			content, err := util.GetLocalHtml(file)
 			if err != nil {
+				if file == "" {
+					fmt.Println("tried to open a test.txt file in root directory, failed")
+				} else {
+					fmt.Printf("No such file %s exists\n", file)
+				}
+
 				panic(err)
 			}
 
 			doc, _ := html.Parse(strings.NewReader(string(content)))
-			parser.Parse(doc)
+			p := parser.FlParser{
+				Dev:        devMode,
+				CurrentDoc: file,
+			}
+			if !p.Dev {
+				p.Db = repository.Connect()
+			}
+			p.Parse(doc)
 		},
 	}
 )
 
 func init() {
 	devfileCmd.Flags().StringVar(&file, "file", "", "specify the file to get")
+	devfileCmd.Flags().BoolVar(&devMode, "devMode", false, "Dev mode flag. Do not save to db")
 	rootCmd.AddCommand(devfileCmd)
 
 	// Here you will define your flags and configuration settings.

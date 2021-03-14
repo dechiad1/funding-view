@@ -16,6 +16,7 @@ var doc = `<!doctype html>
 	<body>
 		<p>-</p>
 		<p>—</p>
+		<p>—<br><strong><a href="http://www.cfpharmtech.com/">CF PharmTech</a></strong> is a specialty pharmaceutical company that develops and manufactures inhalation products. <strong><a href="https://www.linkedin.com/company/cf-pharmtech-inc-/">View on Linkedin</a>.</strong></p>
 		<p>here is a really long string that doesnt actually contain any meaninful scontent therefore we dwa to to make it return false</p>
 		<div><hr></div>
 		<p><strong><a href="http://www.enevate.com">Enevate</a></strong> develops Li-ion battery charging solutions using a pure silicon-dominant battery technology, enabling electric vehicle owners to charge their cars as fast as refueling a gas car. <strong>View on: <a href="https://www.linkedin.com/company/enevate-corporation">LinkedIn.com</a> | <a href="https://www.linkedin.com/sales/company/2024574">Sales Navigator</a>.</strong></p>
@@ -37,12 +38,38 @@ var doc = `<!doctype html>
 </html>
 `
 
-func Test_isElement_name_description(t *testing.T) {
+func Test_Parse(t *testing.T) {
+	doc, _ := html.Parse(strings.NewReader(doc))
+	p := FlParser{Dev: true}
+	companies := make([]*dto.FlCompanyDTO, 0)
+	p.parse(doc, &companies)
+
+	if len(companies) != 2 {
+		t.Errorf("Got %d companies, wanted 2", len(companies))
+	}
+
+	cases := []struct {
+		company           *dto.FlCompanyDTO
+		wantedCompanyName string
+	}{
+		{companies[0], "Enevate"},
+		{companies[1], "Outreach"},
+	}
+
+	for _, c := range cases {
+		if c.company.Name != c.wantedCompanyName {
+			t.Errorf("Wanted %s, but got %s\n", c.wantedCompanyName, c.company.Name)
+		}
+	}
+}
+
+func Test_IsAttribute_name_description(t *testing.T) {
 	doc, _ := html.Parse(strings.NewReader(doc))
 	pNodes := util.GetNodesOfType(doc, "p")
 
-	if len(pNodes) != 17 {
-		t.Errorf("len pNodes is not 17. Got %d", len(pNodes))
+	pCount := 18
+	if len(pNodes) != pCount {
+		t.Errorf("len pNodes is not %d. Got %d", pCount, len(pNodes))
 	}
 
 	cases := []struct {
@@ -52,8 +79,9 @@ func Test_isElement_name_description(t *testing.T) {
 		Attribute int
 	}{
 		{pNodes[0], false, "", -1},
-		{pNodes[3], true, "Enevate", 0},
-		{pNodes[10], true, "Outreach", 0},
+		{pNodes[2], true, "CF PharmTech", 0},
+		{pNodes[4], true, "Enevate", 0},
+		{pNodes[11], true, "Outreach", 0},
 	}
 
 	for i, c := range cases {

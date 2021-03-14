@@ -27,6 +27,9 @@ func BatchFetchWebpages(year int, startCount int) *html.Node {
 	} else if year == 2020 {
 		startMonth = 1
 		startDate = 2
+	} else if year == 2021 {
+		startMonth = 1
+		startDate = 4
 	} else {
 		fmt.Println("Year not valid to collect info from")
 		os.Exit(1)
