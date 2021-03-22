@@ -34,7 +34,8 @@ func (p *FlParser) Parse(node *html.Node) {
 			if c.Name == "" {
 				fmt.Printf("Company number %d from %s is null", i, p.CurrentDoc)
 			}
-			p.Db.Create(c)
+			c.PrintDto()
+			p.Db.Create(&dao)
 		}
 	}
 }
@@ -92,38 +93,16 @@ func IsAttribute(node *html.Node, company *dto.FlCompanyDTO) {
 			return
 		}
 	} else {
-		// get the nodes children as a string & test if its likely to be name & description
-		text := util.HtmlToString(node)
-		if strings.Contains(text, "<br>") {
-			// TODO: add printline here for the date with this blocking item
-			return
-		}
-		if strings.Count(text, "<p>") != 1 {
-			return
-		}
-		if strings.Count(text, "<a>") > 4 {
-			return
-		}
-		if !contains(text, "LinkedIn", "Linkedin", "linkedin") {
-			return
-		}
-		// at this point, its probably the right element
-		content := util.NodeToStringSlice(node)
-		nameSet := false
-		description := ""
-		for _, c := range content {
-			if c == "" {
-				continue
-			} else {
-				if !nameSet {
-					company.Name = c
-					nameSet = true
+		if node.Type == html.ElementNode && node.Data == "a" {
+			// First link is always the company name
+			if company.IsEmpty() {
+				if node.FirstChild != nil && node.FirstChild.Type == html.TextNode {
+					company.Name = node.FirstChild.Data
 				} else {
-					description = description + c
+					fmt.Printf("First child is not the company")
 				}
 			}
 		}
-		company.Description = description
 	}
 }
 
@@ -135,4 +114,40 @@ func contains(text string, words ...string) bool {
 		}
 	}
 	return contains
+}
+
+// Depreciate approach collecting name & description?
+func getNameAndDescription(node *html.Node, company *dto.FlCompanyDTO) {
+	// get the nodes children as a string & test if its likely to be name & description
+	text := util.HtmlToString(node)
+	if strings.Contains(text, "<br>") {
+		// TODO: add printline here for the date with this blocking item
+		return
+	}
+	if strings.Count(text, "<p>") != 1 {
+		return
+	}
+	if strings.Count(text, "<a>") > 4 {
+		return
+	}
+	if !contains(text, "LinkedIn", "Linkedin", "linkedin") {
+		return
+	}
+	// at this point, its probably the right element
+	content := util.NodeToStringSlice(node)
+	nameSet := false
+	description := ""
+	for _, c := range content {
+		if c == "" {
+			continue
+		} else {
+			if !nameSet {
+				company.Name = c
+				nameSet = true
+			} else {
+				description = description + c
+			}
+		}
+	}
+	company.Description = description
 }

@@ -86,6 +86,7 @@ func Test_IsAttribute_name_description(t *testing.T) {
 
 	for i, c := range cases {
 		nc := dto.FlCompanyDTO{}
+		// TODO: this doesnt work cause ur sending in a <p> when ur checking for an <a>
 		IsAttribute(c.Node, &nc)
 
 		if c.Valid {
@@ -102,6 +103,7 @@ func Test_IsAttribute_name_description(t *testing.T) {
 	}
 }
 
+// TODO: figure out better way to generate nodes for the test
 func Test_IsSeparator(t *testing.T) {
 	doc, _ := html.Parse(strings.NewReader(doc))
 	p := &FlParser{}

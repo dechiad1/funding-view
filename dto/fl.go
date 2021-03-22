@@ -39,6 +39,13 @@ func (dto *FlCompanyDTO) IsSaveAble() bool {
 	return false
 }
 
+func (dto *FlCompanyDTO) IsEmpty() bool {
+	if dto.Name == "" && dto.Description == "" && dto.Funding == "" && dto.Industry == "" && dto.Investors == "" && dto.EmployeeCount == "" && dto.Location == "" {
+		return true
+	}
+	return false
+}
+
 func (dto *FlCompanyDTO) ConvertFlCompanyDto(dao *repository.CompanyFunding) {
 	ecSlice := pattern.FindAllString(dto.EmployeeCount, 1)
 	var ec string
